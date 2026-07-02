@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #17202a;
+  background: #ece6dc;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+header {
+  align-items: end;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  margin: 0 auto 18px;
+  max-width: 1180px;
+}
+
+header p {
+  color: #4169a8;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0 0 4px;
+}
+
+h1 {
+  font-size: 28px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.api-chip,
+.status-dot {
+  background: #f8fafc;
+  border: 1px solid #d7cec1;
+  border-radius: 999px;
+  color: #5a5f68;
+  font-size: 13px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.status-dot.online {
+  border-color: #56a582;
+  color: #17704f;
+}
+
+.workspace {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  margin: 0 auto;
+  max-width: 1180px;
+}
+
+.board-shell,
+.tool-panel,
+.info-panel,
+.error-banner {
+  background: #fffdf8;
+  border: 1px solid #d7cec1;
+  border-radius: 8px;
+  box-shadow: 0 18px 36px rgba(52, 64, 84, 0.12);
+}
+
+.board-shell {
+  aspect-ratio: 1 / 1;
+  min-height: 520px;
+  overflow: hidden;
+}
+
+aside {
+  display: grid;
+  gap: 14px;
+}
+
+.tool-panel,
+.info-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.panel-row,
+.button-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+label {
+  color: #59616d;
+  display: grid;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 7px;
+}
+
+select,
+button {
+  background: #f8fafc;
+  border: 1px solid #c8c1b5;
+  border-radius: 7px;
+  color: #17202a;
+  min-height: 40px;
+  padding: 0 11px;
+}
+
+button {
+  background: #4169a8;
+  border-color: #4169a8;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+button:hover {
+  background: #36598f;
+}
+
+input[type="range"] {
+  accent-color: #cf6f5f;
+  width: 100%;
+}
+
+.meter {
+  background: #ebe4d8;
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+}
+
+.meter div {
+  background: #56a582;
+  height: 100%;
+}
+
+.metric-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metric {
+  background: #f8fafc;
+  border: 1px solid #e4ddd2;
+  border-radius: 7px;
+  display: grid;
+  gap: 5px;
+  min-height: 58px;
+  padding: 10px;
+}
+
+.metric span,
+.info-panel span {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.metric strong,
+.info-panel strong {
+  color: #17202a;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
+.error-banner {
+  color: #b42318;
+  margin: 0 auto 14px;
+  max-width: 1180px;
+  padding: 12px 14px;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    padding: 14px;
+  }
+
+  header {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .board-shell {
+    min-height: 340px;
+  }
+}
