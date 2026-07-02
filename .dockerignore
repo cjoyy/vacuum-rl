@@ -1,0 +1,14 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.py[cod]
+*.log
+
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/node_modules/.vite
+frontend/node_modules/.vite-temp
+
+p2drl-2306217430

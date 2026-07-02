@@ -1,0 +1,46 @@
+grid_rows: 7
+grid_cols: 7
+battery_capacity: 100
+charge_amount: 5
+max_steps: 500
+dock_position: [1, 1]
+obstacle:
+  mode: fixed
+  count: 5
+  positions:
+    - [2, 4]
+    - [3, 6]
+    - [4, 2]
+    - [5, 5]
+    - [6, 3]
+p_move: 0.9
+dirt_dynamics:
+  rho0: 0.003
+  rho1: 0.002
+  rho2: 0.001
+  rho3: 0.0
+random_seed: 12345
+initial_dirt_probs:
+  q0: 0.70
+  q1: 0.20
+  q2: 0.08
+  q3: 0.02
+rewards:
+  step_cost: 1.0
+  move_cost: 1.0
+  slip_penalty: 2.0
+  bump_penalty: 5.0
+  idle_penalty: 2.0
+  clean_cost: 2.0
+  waste_penalty: 4.0
+  dock_clean_penalty: 8.0
+  charge_cost: 1.0
+  full_charge_penalty: 5.0
+  away_charge_penalty: 10.0
+  alpha_1: 30.0
+  alpha_2: 40.0
+  alpha_3: 50.0
+  alpha_charge: 0.8
+  lambda_return: 2.0
+  low_battery_threshold: 25
+  reset_penalty: 600.0
