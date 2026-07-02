@@ -26,6 +26,7 @@ class AlgorithmInfo(BaseModel):
     model_path: str
     available: bool
     continuous_policy: bool = False
+    load_error: str | None = None
 
 
 class AlgorithmsResponse(BaseModel):
@@ -49,6 +50,8 @@ class EnvStateResponse(BaseModel):
     step_count: int
     episode_return: float
     total_dirt: int
+    battery_reset: bool
+    relocated_to_dock: bool
     terminated: bool
     truncated: bool
     info: dict[str, Any]

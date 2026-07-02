@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .schemas import AlgorithmsResponse, EnvStateResponse, ResetRequest, StepRequest
 from .simulation import ALGORITHMS, make_env, policy_cache, reset_env, step_env
@@ -32,6 +35,7 @@ app.add_middleware(
 )
 
 _rest_env = make_env(seed=12345)
+STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
 
 
 @app.on_event("startup")
@@ -42,6 +46,19 @@ def load_models_on_startup() -> None:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/")
+def root():
+    index_file = STATIC_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {
+        "name": "vacuum-rl backend",
+        "health": "/health",
+        "algorithms": "/algorithms",
+        "websocket": "/ws/step",
+    }
 
 
 @app.get("/algorithms", response_model=AlgorithmsResponse)
@@ -56,6 +73,7 @@ def algorithms() -> dict:
                 "model_path": str(spec.model_path.relative_to(spec.model_path.parents[3])),
                 "available": spec.model_path.exists() and spec.id not in load_errors,
                 "continuous_policy": spec.continuous_policy,
+                "load_error": load_errors.get(spec.id),
             }
             for spec in ALGORITHMS.values()
         ],
@@ -77,19 +95,31 @@ async def websocket_step(websocket: WebSocket) -> None:
 
     try:
         while True:
-            payload = await websocket.receive_json()
-            request_type = str(payload.get("type", "step")).lower()
-            algorithm = str(payload.get("algorithm", algorithm)).lower()
-            if request_type == "reset":
-                seed = payload.get("seed")
-                await websocket.send_json(reset_env(env, algorithm=algorithm, seed=seed))
-                continue
+            try:
+                payload = await websocket.receive_json()
+                request_type = str(payload.get("type", "step")).lower()
+                algorithm = str(payload.get("algorithm", algorithm)).lower()
+                if request_type == "ping":
+                    await websocket.send_json({"type": "pong"})
+                    continue
+                if request_type == "reset":
+                    seed = payload.get("seed")
+                    await websocket.send_json(reset_env(env, algorithm=algorithm, seed=seed))
+                    continue
 
-            request = StepRequest(**payload)
-            action = None if request.mode == "auto" else request.action
-            await websocket.send_json(step_env(env, algorithm=request.algorithm, action=action))
+                request = StepRequest(**payload)
+                action = None if request.mode == "auto" else request.action
+                await websocket.send_json(step_env(env, algorithm=request.algorithm, action=action))
+            except ValueError as exc:
+                await websocket.send_json({"error": str(exc), "recoverable": True})
+            except RuntimeError as exc:
+                await websocket.send_json({"error": str(exc), "recoverable": True})
     except WebSocketDisconnect:
         env.close()
     except Exception as exc:
         await websocket.send_json({"error": str(exc)})
         env.close()
+
+
+if (STATIC_DIR / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
