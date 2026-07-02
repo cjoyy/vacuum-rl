@@ -44,16 +44,6 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/")
-def root() -> dict[str, str]:
-    return {
-        "name": "vacuum-rl backend",
-        "health": "/health",
-        "algorithms": "/algorithms",
-        "websocket": "/ws/step",
-    }
-
-
 @app.get("/algorithms", response_model=AlgorithmsResponse)
 def algorithms() -> dict:
     load_errors = policy_cache.load_errors
@@ -66,7 +56,6 @@ def algorithms() -> dict:
                 "model_path": str(spec.model_path.relative_to(spec.model_path.parents[3])),
                 "available": spec.model_path.exists() and spec.id not in load_errors,
                 "continuous_policy": spec.continuous_policy,
-                "load_error": load_errors.get(spec.id),
             }
             for spec in ALGORITHMS.values()
         ],
@@ -88,25 +77,17 @@ async def websocket_step(websocket: WebSocket) -> None:
 
     try:
         while True:
-            try:
-                payload = await websocket.receive_json()
-                request_type = str(payload.get("type", "step")).lower()
-                algorithm = str(payload.get("algorithm", algorithm)).lower()
-                if request_type == "ping":
-                    await websocket.send_json({"type": "pong"})
-                    continue
-                if request_type == "reset":
-                    seed = payload.get("seed")
-                    await websocket.send_json(reset_env(env, algorithm=algorithm, seed=seed))
-                    continue
+            payload = await websocket.receive_json()
+            request_type = str(payload.get("type", "step")).lower()
+            algorithm = str(payload.get("algorithm", algorithm)).lower()
+            if request_type == "reset":
+                seed = payload.get("seed")
+                await websocket.send_json(reset_env(env, algorithm=algorithm, seed=seed))
+                continue
 
-                request = StepRequest(**payload)
-                action = None if request.mode == "auto" else request.action
-                await websocket.send_json(step_env(env, algorithm=request.algorithm, action=action))
-            except ValueError as exc:
-                await websocket.send_json({"error": str(exc), "recoverable": True})
-            except RuntimeError as exc:
-                await websocket.send_json({"error": str(exc), "recoverable": True})
+            request = StepRequest(**payload)
+            action = None if request.mode == "auto" else request.action
+            await websocket.send_json(step_env(env, algorithm=request.algorithm, action=action))
     except WebSocketDisconnect:
         env.close()
     except Exception as exc:

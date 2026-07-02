@@ -228,8 +228,6 @@ def serialize_env_state(
         for key, value in info.items()
         if key != "state"
     }
-    battery_reset = bool(serializable_info.get("manual_reset") or serializable_info.get("battery_depleted"))
-    relocated_to_dock = battery_reset and state.robot_pos == env.dock_pos
     return {
         "algorithm": algorithm,
         "observation": [float(value) for value in np.asarray(observation).tolist()],
@@ -246,8 +244,6 @@ def serialize_env_state(
         "step_count": int(env._step_count),
         "episode_return": float(env._episode_return),
         "total_dirt": int(sum(state.dirt)),
-        "battery_reset": battery_reset,
-        "relocated_to_dock": relocated_to_dock,
         "terminated": bool(terminated),
         "truncated": bool(truncated),
         "info": serializable_info,
