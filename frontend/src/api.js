@@ -1,4 +1,7 @@
-const DEFAULT_API_URL = "http://localhost:8000";
+const DEFAULT_API_URL =
+  typeof window === "undefined" || window.location.port === "5173"
+    ? `http://${typeof window === "undefined" ? "localhost" : window.location.hostname || "localhost"}:8000`
+    : window.location.origin;
 
 export const API_URL = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/$/, "");
 

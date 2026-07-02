@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function InfoPanel({ state }) {
   const batteryRatio = state ? Math.max(0, Math.min(1, state.battery / state.battery_capacity)) : 0;
 
@@ -20,6 +22,11 @@ export default function InfoPanel({ state }) {
         <Metric label="Dirt" value={state?.total_dirt ?? 0} />
         <Metric label="Robot" value={state?.robot_pos ? state.robot_pos.join(", ") : "-"} />
       </div>
+      {state?.battery_reset ? (
+        <div className="event-banner">
+          Battery depleted. Robot relocated to dock.
+        </div>
+      ) : null}
     </section>
   );
 }

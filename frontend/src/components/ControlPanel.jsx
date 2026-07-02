@@ -1,3 +1,5 @@
+import React from "react";
+
 const ACTIONS = ["auto", "N", "S", "E", "W", "Stay", "Clean", "Charge"];
 
 export default function ControlPanel({
@@ -7,6 +9,7 @@ export default function ControlPanel({
   speed,
   isPlaying,
   connectionStatus,
+  canSend,
   onAlgorithmChange,
   onActionChange,
   onSpeedChange,
@@ -47,10 +50,10 @@ export default function ControlPanel({
         <button type="button" onClick={onReset}>
           Reset
         </button>
-        <button type="button" onClick={onPlayPause}>
+        <button type="button" onClick={onPlayPause} disabled={!canSend}>
           {isPlaying ? "Pause" : "Play"}
         </button>
-        <button type="button" onClick={onStep}>
+        <button type="button" onClick={onStep} disabled={!canSend}>
           Step
         </button>
       </div>
