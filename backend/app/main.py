@@ -6,7 +6,6 @@ from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .schemas import AlgorithmsResponse, EnvStateResponse, ResetRequest, StepRequest
@@ -61,18 +60,6 @@ def health() -> dict:
         "load_errors": {k: str(v) for k, v in policy_cache._load_errors.items()},
     }
 
-
-@app.get("/")
-def root():
-    index_file = STATIC_DIR / "index.html"
-    if index_file.exists():
-        return FileResponse(index_file)
-    return {
-        "name": "vacuum-rl backend",
-        "health": "/health",
-        "algorithms": "/algorithms",
-        "websocket": "/ws/step",
-    }
 
 
 @app.get("/algorithms", response_model=AlgorithmsResponse)
@@ -211,5 +198,5 @@ async def websocket_arena(websocket: WebSocket) -> None:
             env.close()
 
 
-if (STATIC_DIR / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
+if STATIC_DIR.exists():
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
