@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 
@@ -9,7 +10,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .schemas import AlgorithmsResponse, EnvStateResponse, ResetRequest, StepRequest
-from .simulation import ALGORITHMS, make_env, policy_cache, reset_env, step_env
+from .simulation import ALGORITHMS, make_env, policy_cache, reset_env, step_env, arena_step, arena_reset, make_arena_envs, ARENA_MAX_INSTANCES
+
+logger = logging.getLogger("vacuum-rl.api")
 
 
 def _allowed_origins() -> list[str]:
@@ -40,12 +43,23 @@ STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
 
 @app.on_event("startup")
 def load_models_on_startup() -> None:
+    import time
+    start = time.perf_counter()
     policy_cache.load_all()
+    elapsed = time.perf_counter() - start
+    logger.info("Total startup model loading: %.2fs", elapsed)
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict:
+    return {
+        "status": "ok",
+        "models_loaded": list(policy_cache._models.keys()),
+        "models_failed": list(policy_cache._load_errors.keys()),
+        "load_times_s": policy_cache.load_times,
+        "startup_duration_s": policy_cache._startup_duration,
+        "load_errors": {k: str(v) for k, v in policy_cache._load_errors.items()},
+    }
 
 
 @app.get("/")
@@ -91,7 +105,11 @@ async def websocket_step(websocket: WebSocket) -> None:
     await websocket.accept()
     env = make_env(seed=12345)
     algorithm = "ppo"
-    await websocket.send_json(reset_env(env, algorithm=algorithm, seed=12345))
+    try:
+        await websocket.send_json(reset_env(env, algorithm=algorithm, seed=12345))
+    except Exception:
+        env.close()
+        return
 
     try:
         while True:
@@ -114,11 +132,83 @@ async def websocket_step(websocket: WebSocket) -> None:
                 await websocket.send_json({"error": str(exc), "recoverable": True})
             except RuntimeError as exc:
                 await websocket.send_json({"error": str(exc), "recoverable": True})
+            except WebSocketDisconnect:
+                raise
+            except Exception as exc:
+                logger.warning("ws/step inner error: %s", exc)
+                try:
+                    await websocket.send_json({"error": f"Internal error: {exc}", "recoverable": True})
+                except Exception:
+                    raise WebSocketDisconnect() from exc
     except WebSocketDisconnect:
-        env.close()
+        pass
     except Exception as exc:
-        await websocket.send_json({"error": str(exc)})
+        logger.error("ws/step fatal error: %s", exc)
+    finally:
         env.close()
+
+
+@app.websocket("/ws/arena")
+async def websocket_arena(websocket: WebSocket) -> None:
+    await websocket.accept()
+    envs: dict[str, Any] = {}
+    seed = 12345
+
+    try:
+        while True:
+            try:
+                payload = await websocket.receive_json()
+                msg_type = str(payload.get("type", "")).lower()
+
+                if msg_type == "init":
+                    algorithms = payload.get("algorithms", [])
+                    seed = payload.get("seed", seed)
+                    for env in envs.values():
+                        env.close()
+                    envs = make_arena_envs(algorithms, seed=seed)
+                    states = arena_reset(envs, seed=seed)
+                    await websocket.send_json({"type": "arena_states", "states": states})
+
+                elif msg_type == "step":
+                    if not envs:
+                        await websocket.send_json({"error": "No arena running. Send init first."})
+                        continue
+                    states = arena_step(envs)
+                    await websocket.send_json({"type": "arena_states", "states": states})
+
+                elif msg_type == "reset":
+                    if not envs:
+                        await websocket.send_json({"error": "No arena running."})
+                        continue
+                    seed = payload.get("seed", seed)
+                    states = arena_reset(envs, seed=seed)
+                    await websocket.send_json({"type": "arena_states", "states": states})
+
+                elif msg_type == "ping":
+                    await websocket.send_json({"type": "pong"})
+
+                else:
+                    await websocket.send_json({"error": f"Unknown message type: {msg_type}"})
+
+            except ValueError as exc:
+                await websocket.send_json({"type": "arena_error", "error": str(exc), "recoverable": True})
+            except RuntimeError as exc:
+                await websocket.send_json({"type": "arena_error", "error": str(exc), "recoverable": True})
+            except WebSocketDisconnect:
+                raise
+            except Exception as exc:
+                logger.warning("ws/arena inner error: %s", exc)
+                try:
+                    await websocket.send_json({"type": "arena_error", "error": f"Internal error: {exc}", "recoverable": True})
+                except Exception:
+                    raise WebSocketDisconnect() from exc
+    except WebSocketDisconnect:
+        pass
+    except Exception as exc:
+        logger.error("ws/arena fatal error: %s", exc)
+    finally:
+        for env in envs.values():
+            env.close()
 
 
 if (STATIC_DIR / "assets").exists():
