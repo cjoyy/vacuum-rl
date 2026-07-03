@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { fetchAlgorithms, resetEpisode, websocketUrl } from "./api.js";
 import ControlPanel from "./components/ControlPanel.jsx";
 import GridCanvas from "./components/GridCanvas.jsx";
 import InfoPanel from "./components/InfoPanel.jsx";
 
 export default function App() {
+  const { t, i18n } = useTranslation();
   const [algorithms, setAlgorithms] = useState([]);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState("ppo");
   const [selectedAction, setSelectedAction] = useState("auto");
@@ -15,8 +18,11 @@ export default function App() {
   const [error, setError] = useState("");
   const socketRef = useRef(null);
   const reconnectTimerRef = useRef(null);
+  const reconnectDelayRef = useRef(1000);
+  const maxReconnectDelay = 30000;
   const selectedAlgorithmRef = useRef(selectedAlgorithm);
   const shouldReconnectRef = useRef(true);
+  const isManuallyClosedRef = useRef(false);
 
   const availableAlgorithms = useMemo(
     () => algorithms.filter((algorithm) => algorithm.available),
@@ -39,9 +45,12 @@ export default function App() {
 
   useEffect(() => {
     shouldReconnectRef.current = true;
+    isManuallyClosedRef.current = false;
+    reconnectDelayRef.current = 1000;
     connectSocket();
     return () => {
       shouldReconnectRef.current = false;
+      isManuallyClosedRef.current = true;
       window.clearTimeout(reconnectTimerRef.current);
       socketRef.current?.close();
     };
@@ -69,7 +78,7 @@ export default function App() {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       setIsPlaying(false);
-      setError("WebSocket is disconnected. Reconnecting...");
+      setError(t("error.websocket_disconnected"));
       setConnectionStatus("reconnecting");
       connectSocket();
       return;
@@ -93,6 +102,7 @@ export default function App() {
 
     socket.onopen = () => {
       if (socketRef.current !== socket) return;
+      reconnectDelayRef.current = 1000;
       setConnectionStatus("connected");
       setError("");
       socket.send(JSON.stringify({ type: "reset", algorithm: selectedAlgorithmRef.current }));
@@ -122,10 +132,12 @@ export default function App() {
       setConnectionStatus("closed");
       setIsPlaying(false);
       if (shouldReconnectRef.current) {
+        const delay = reconnectDelayRef.current;
+        setConnectionStatus("reconnecting");
         reconnectTimerRef.current = window.setTimeout(() => {
-          setConnectionStatus("reconnecting");
+          reconnectDelayRef.current = Math.min(delay * 2, maxReconnectDelay);
           connectSocket();
-        }, 1200);
+        }, delay);
       }
     };
   }
@@ -153,68 +165,79 @@ export default function App() {
     }
   }
 
+  function cycleLang() {
+    i18n.changeLanguage(i18n.language === "en" ? "id" : "en");
+  }
+
   return (
     <main className="app-shell">
       <header className="site-nav">
         <a className="brand-mark" href="#top" aria-label="Vacuum RL home">
           <span className="brand-symbol">VRL</span>
           <span>
-            <strong>Vacuum RL</strong>
-            <small>Reinforcement Learning Simulator</small>
+            <strong>{t("brand.title")}</strong>
+            <small>{t("brand.subtitle")}</small>
           </span>
         </a>
         <nav aria-label="Primary navigation">
-          <a href="#demo">Demo</a>
-          <a href="#about">About</a>
+          <a href="#demo">{t("nav.demo")}</a>
+          <Link to="/arena">{t("nav.arena")}</Link>
+          <a href="#about">{t("nav.about")}</a>
           <a href="https://github.com/cjoyy/vacuum-rl" target="_blank" rel="noreferrer">
-            GitHub
+            {t("nav.github")}
           </a>
+          <button type="button" className="lang-switcher" onClick={cycleLang}>
+            {i18n.language === "en" ? "ID" : "EN"}
+          </button>
         </nav>
       </header>
 
       <section className="hero-section" id="top">
         <div className="hero-copy">
-          <p className="section-kicker">Interactive research tool</p>
-          <h1>Vacuum-cleaning robot dipelajari lewat 5 algoritma reinforcement learning</h1>
+          <p className="section-kicker">{t("hero.kicker")}</p>
+          <h1>{t("hero.title")}</h1>
           <p className="hero-subtitle">
-            Simulasi ini memvisualisasikan kebijakan DQN, TRPO, PPO, A2C, dan SAC pada
-            lingkungan MDP vacuum-cleaning dengan battery constraint, obstacle, dan dinamika dirt.
+            {t("hero.subtitle")}
           </p>
           <div className="hero-actions">
-            <a className="primary-cta" href="#demo">Explore Demo</a>
-            <a className="secondary-cta" href="#about">Read MDP Summary</a>
+            <a className="primary-cta" href="#demo">{t("hero.cta.demo")}</a>
+            <a className="secondary-cta" href="#about">{t("hero.cta.about")}</a>
           </div>
         </div>
         <div className="hero-panel" aria-label="Experiment overview">
           <div className="hero-panel-header">
-            <span>Policy rollout</span>
-            <strong>{connectionStatus}</strong>
+            <span>{t("hero.panel.title")}</span>
+            <strong className={`status-text status-${connectionStatus}`}>
+              {connectionStatus === "connected" ? t("status.connected")
+                : connectionStatus === "connecting" ? t("status.connecting")
+                : connectionStatus === "reconnecting" ? t("status.reconnecting")
+                : connectionStatus === "closed" ? t("status.closed")
+                : connectionStatus === "error" ? t("status.error")
+                : connectionStatus}
+            </strong>
           </div>
           <div className="hero-panel-grid">
-            <span>Algorithms</span>
+            <span>{t("hero.panel.algorithms")}</span>
             <strong>{availableAlgorithms.length || 5}</strong>
-            <span>Actions</span>
+            <span>{t("hero.panel.actions")}</span>
             <strong>7</strong>
-            <span>Environment</span>
+            <span>{t("hero.panel.environment")}</span>
             <strong>7 x 7</strong>
           </div>
         </div>
       </section>
 
       <section className="stats-section" aria-label="Experiment highlights">
-        <HighlightCard value="71.67%" label="Success rate" detail="PPO policy quality evaluation" />
-        <HighlightCard value="0.8956" label="Clean-cell ratio" detail="Average clean-state proportion" />
-        <HighlightCard value="5" label="Algorithms compared" detail="DQN, TRPO, PPO, A2C, SAC" />
+        <HighlightCard value="71.67%" label={t("stat.success_rate")} detail={t("stat.success_rate_detail")} />
+        <HighlightCard value="0.8956" label={t("stat.clean_cell_ratio")} detail={t("stat.clean_cell_ratio_detail")} />
+        <HighlightCard value="5" label={t("stat.algorithms_compared")} detail={t("stat.algorithms_compared_detail")} />
       </section>
 
       <section className="demo-section" id="demo">
         <div className="section-heading">
-          <p className="section-kicker">Live simulator</p>
-          <h2>Observe policy decisions step by step</h2>
-          <p>
-            Pilih algoritma, jalankan auto-policy, atau kirim action manual. Grid, battery,
-            reward, dan episode return diperbarui melalui WebSocket.
-          </p>
+          <p className="section-kicker">{t("demo.kicker")}</p>
+          <h2>{t("demo.title")}</h2>
+          <p>{t("demo.description")}</p>
         </div>
 
         {error ? <div className="error-banner">{error}</div> : null}
@@ -244,43 +267,28 @@ export default function App() {
 
       <section className="about-section" id="about">
         <div className="section-heading">
-          <p className="section-kicker">MDP formulation</p>
-          <h2>Vacuum cleaning as a constrained decision process</h2>
+          <p className="section-kicker">{t("about.kicker")}</p>
+          <h2>{t("about.title")}</h2>
         </div>
-        <div className="about-grid">
-          <article>
-            <h3>State</h3>
-            <p>
-              State mencakup posisi robot, level battery, status dirt pada local perception,
-              obstacle, dan jarak relatif menuju charging dock.
-            </p>
-          </article>
-          <article>
-            <h3>Action</h3>
-            <p>
-              Agent memilih tujuh aksi diskrit: bergerak N/S/E/W, Stay, Clean, atau Charge.
-              SAC dipetakan dari action kontinu ke action diskrit environment.
-            </p>
-          </article>
-          <article>
-            <h3>Reward</h3>
-            <p>
-              Reward menyeimbangkan pembersihan sel kotor, biaya langkah dan gerak, penalti bump,
-              penalti action tidak efektif, charging behavior, dan reset saat battery habis.
-            </p>
-          </article>
+        <div className="pdf-viewer">
+          <iframe
+            src="/paper.pdf"
+            className="pdf-iframe"
+            title="Project paper"
+            loading="lazy"
+          />
         </div>
       </section>
 
       <footer className="site-footer">
         <div>
-          <strong>Vacuum RL</strong>
-          <p>Interactive companion for a reinforcement-learning vacuum-cleaner study.</p>
+          <strong>{t("footer.title")}</strong>
+          <p>{t("footer.description")}</p>
         </div>
         <div className="footer-links">
-          <a href="https://github.com/cjoyy/vacuum-rl" target="_blank" rel="noreferrer">GitHub Repository</a>
-          <span>Author/contributor: cjoyy</span>
-          <span>Reference: project paper, Table 4 policy-quality results</span>
+          <a href="https://github.com/cjoyy/vacuum-rl" target="_blank" rel="noreferrer">{t("footer.github")}</a>
+          <span>{t("footer.author")}</span>
+          <span>{t("footer.reference")}</span>
         </div>
       </footer>
     </main>
