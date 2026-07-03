@@ -7,7 +7,7 @@ export default function ControlPanel({
   algorithms,
   selectedAlgorithm,
   selectedAction,
-  speed,
+  speedMultiplier,
   isPlaying,
   connectionStatus,
   canSend,
@@ -33,7 +33,7 @@ export default function ControlPanel({
             ))}
           </select>
         </label>
-        <span className={`status-dot ${connectionStatus === "connected" ? "online" : ""}`}>
+        <span className={`status-dot status-${connectionStatus}`}>
           {connectionStatus}
         </span>
       </div>
@@ -50,27 +50,31 @@ export default function ControlPanel({
       </label>
 
       <div className="button-row">
-        <button type="button" onClick={onReset}>
+        <button type="button" className="btn-reset" onClick={onReset}>
           {t("control.reset")}
         </button>
-        <button type="button" onClick={onPlayPause} disabled={!canSend}>
+        <button type="button" className={isPlaying ? "btn-pause" : "btn-play"} onClick={onPlayPause} disabled={!canSend}>
           {isPlaying ? t("control.pause") : t("control.play")}
         </button>
-        <button type="button" onClick={onStep} disabled={!canSend}>
+        <button type="button" className="btn-step" onClick={onStep} disabled={!canSend}>
           {t("control.step")}
         </button>
       </div>
 
-      <label>
-        {t("control.speed")}
+      <label className="speed-control">
+        <span className="speed-control-row">
+          <span>{t("control.speed")}</span>
+          <strong>{speedMultiplier}x</strong>
+        </span>
         <input
           type="range"
-          min="120"
-          max="1200"
-          step="40"
-          value={speed}
+          min="1"
+          max="5"
+          step="1"
+          value={speedMultiplier}
           onChange={(event) => onSpeedChange(Number(event.target.value))}
         />
+        <span className="speed-control-hint">1x lebih lambat, 5x paling cepat</span>
       </label>
     </section>
   );

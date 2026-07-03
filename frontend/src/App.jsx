@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 import { fetchAlgorithms, resetEpisode, websocketUrl } from "./api.js";
+import ArenaSection from "./components/ArenaSection.jsx";
 import ControlPanel from "./components/ControlPanel.jsx";
 import GridCanvas from "./components/GridCanvas.jsx";
 import InfoPanel from "./components/InfoPanel.jsx";
@@ -11,7 +11,7 @@ export default function App() {
   const [algorithms, setAlgorithms] = useState([]);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState("ppo");
   const [selectedAction, setSelectedAction] = useState("auto");
-  const [speed, setSpeed] = useState(520);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [state, setState] = useState(null);
@@ -33,8 +33,9 @@ export default function App() {
     fetchAlgorithms()
       .then((payload) => {
         setAlgorithms(payload.algorithms);
-        const firstAvailable = payload.algorithms.find((algorithm) => algorithm.available);
-        if (firstAvailable) setSelectedAlgorithm(firstAvailable.id);
+        const availableAlgorithms = payload.algorithms.filter((algorithm) => algorithm.available);
+        const preferred = availableAlgorithms.find((algorithm) => algorithm.id === "ppo") || availableAlgorithms[0];
+        if (preferred) setSelectedAlgorithm(preferred.id);
       })
       .catch((err) => setError(err.message));
   }, []);
@@ -60,9 +61,9 @@ export default function App() {
     if (!isPlaying) return undefined;
     const intervalId = window.setInterval(() => {
       sendStep("auto");
-    }, speed);
+    }, Math.round(520 / speedMultiplier));
     return () => window.clearInterval(intervalId);
-  }, [isPlaying, speed, selectedAlgorithm]);
+  }, [isPlaying, speedMultiplier, selectedAlgorithm]);
 
   useEffect(() => {
     const heartbeatId = window.setInterval(() => {
@@ -181,7 +182,7 @@ export default function App() {
         </a>
         <nav aria-label="Primary navigation">
           <a href="#demo">{t("nav.demo")}</a>
-          <Link to="/arena">{t("nav.arena")}</Link>
+          <a href="#arena">{t("nav.arena")}</a>
           <a href="#about">{t("nav.about")}</a>
           <a href="https://github.com/cjoyy/vacuum-rl" target="_blank" rel="noreferrer">
             {t("nav.github")}
@@ -238,6 +239,7 @@ export default function App() {
           <p className="section-kicker">{t("demo.kicker")}</p>
           <h2>{t("demo.title")}</h2>
           <p>{t("demo.description")}</p>
+          <p className="section-note">{t("demo.limit_note")}</p>
         </div>
 
         {error ? <div className="error-banner">{error}</div> : null}
@@ -249,13 +251,13 @@ export default function App() {
               algorithms={algorithms}
               selectedAlgorithm={selectedAlgorithm}
               selectedAction={selectedAction}
-              speed={speed}
+              speedMultiplier={speedMultiplier}
               isPlaying={isPlaying}
               connectionStatus={connectionStatus}
               canSend={connectionStatus === "connected"}
               onAlgorithmChange={handleAlgorithmChange}
               onActionChange={setSelectedAction}
-              onSpeedChange={setSpeed}
+              onSpeedChange={setSpeedMultiplier}
               onReset={handleReset}
               onStep={() => sendStep()}
               onPlayPause={() => setIsPlaying((current) => !current)}
@@ -265,18 +267,19 @@ export default function App() {
         </div>
       </section>
 
+      <ArenaSection />
+
       <section className="about-section" id="about">
         <div className="section-heading">
           <p className="section-kicker">{t("about.kicker")}</p>
           <h2>{t("about.title")}</h2>
         </div>
         <div className="pdf-viewer">
-          <iframe
-            src="/paper.pdf"
-            className="pdf-iframe"
-            title="Project paper"
-            loading="lazy"
-          />
+          <object data="/paper.pdf" type="application/pdf" className="pdf-iframe" aria-label="Project paper">
+            <p style={{ padding: 16 }}>
+              PDF tidak bisa ditampilkan di browser ini. <a href="/paper.pdf" target="_blank" rel="noreferrer">Buka paper</a>.
+            </p>
+          </object>
         </div>
       </section>
 

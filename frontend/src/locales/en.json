@@ -23,6 +23,7 @@
   "demo.kicker": "Live simulator",
   "demo.title": "Observe policy decisions step by step",
   "demo.description": "Select an algorithm, run auto-policy, or send manual actions. Grid, battery, reward, and episode return update via WebSocket.",
+  "demo.limit_note": "Simulation runs are limited to 500 steps.",
   "about.kicker": "MDP formulation",
   "about.title": "Vacuum cleaning as a constrained decision process",
   "about.state.title": "State",
@@ -65,12 +66,13 @@
   "arena.start": "Start Arena",
   "arena.stop": "Stop",
   "arena.reset_with_same_seed": "Reset with same seed",
-  "arena.max_instances": "Max 4 algorithms",
+  "arena.max_instances": "Up to 5 algorithms",
   "arena.battery": "Battery",
   "arena.step": "Step",
   "arena.reward": "Reward",
   "arena.status.connecting": "Connecting...",
   "arena.status.running": "Running",
   "arena.status.idle": "Idle",
-  "arena.no_selection": "Select 1 to 4 algorithms to start"
+  "arena.limit_note": "Simulation runs are limited to 500 steps.",
+  "arena.no_selection": "Select 1 to 5 algorithms to start"
 }
