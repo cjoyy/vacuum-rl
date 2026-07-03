@@ -3,13 +3,14 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .schemas import AlgorithmsResponse, EnvStateResponse, ResetRequest, StepRequest
-from .simulation import ALGORITHMS, make_env, policy_cache, reset_env, step_env, arena_step, arena_reset, make_arena_envs, ARENA_MAX_INSTANCES
+from .simulation import ALGORITHMS, make_env, policy_cache, reset_env, step_env, arena_step, arena_reset, make_arena_envs
 
 logger = logging.getLogger("vacuum-rl.api")
 
