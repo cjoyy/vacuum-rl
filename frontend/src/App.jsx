@@ -187,7 +187,7 @@ export default function App() {
             {t("nav.github")}
           </a>
           <button type="button" className="lang-switcher" onClick={cycleLang}>
-            {i18n.language === "en" ? "ID" : "EN"}
+            {i18n.language === "en" ? "EN" : "ID"}
           </button>
         </nav>
       </header>
