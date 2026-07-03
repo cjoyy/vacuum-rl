@@ -12,6 +12,10 @@ export function websocketUrl(path) {
   return url.toString();
 }
 
+export function arenaWebsocketUrl() {
+  return websocketUrl("/ws/arena");
+}
+
 export async function fetchAlgorithms() {
   const response = await fetch(`${API_URL}/algorithms`);
   if (!response.ok) {
