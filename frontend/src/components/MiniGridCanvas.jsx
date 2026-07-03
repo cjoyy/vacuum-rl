@@ -1,16 +1,16 @@
 import React, { useEffect, useRef } from "react";
 
 const COLORS = {
-  background: "#f7f4ee",
-  gridLine: "#d7cec1",
-  clean: "#fdfbf7",
-  dirt1: "#e7c46f",
-  dirt2: "#4ea3a8",
-  dirt3: "#cf6f5f",
-  obstacle: "#344054",
-  dock: "#4169a8",
-  robot: "#111827",
-  robotCore: "#f8fafc",
+  background: "#f5f0e7",
+  gridLine: "#d8ccbc",
+  clean: "#fbf8f2",
+  dirt1: "#f0c24b",
+  dirt2: "#4bb6aa",
+  dirt3: "#d96a5e",
+  obstacle: "#3a3f46",
+  dock: "#4b73b8",
+  robot: "#2a2f36",
+  robotCore: "#f8fbff",
 };
 
 function sameCell(a, b) {
@@ -41,7 +41,10 @@ export default function MiniGridCanvas({ state }) {
     const startX = (rect.width - boardWidth) / 2;
     const startY = (rect.height - boardHeight) / 2;
 
-    context.fillStyle = COLORS.background;
+    const backgroundGradient = context.createLinearGradient(0, 0, 0, rect.height);
+    backgroundGradient.addColorStop(0, "#f7f1e8");
+    backgroundGradient.addColorStop(1, COLORS.background);
+    context.fillStyle = backgroundGradient;
     context.fillRect(0, 0, rect.width, rect.height);
 
     const obstacleSet = new Set((state.obstacles || []).map(([row, col]) => `${row},${col}`));
@@ -54,18 +57,45 @@ export default function MiniGridCanvas({ state }) {
         const dirt = state.grid[row][col];
         const isObstacle = obstacleSet.has(`${envCell[0]},${envCell[1]}`);
         const isDock = sameCell(envCell, state.dock);
+        const cellGradient = context.createLinearGradient(x, y, x + size, y + size);
 
-        context.fillStyle = isObstacle
-          ? COLORS.obstacle
-          : isDock
-            ? COLORS.dock
-            : [COLORS.clean, COLORS.dirt1, COLORS.dirt2, COLORS.dirt3][dirt] || COLORS.clean;
+        if (isObstacle) {
+          cellGradient.addColorStop(0, "#4b5159");
+          cellGradient.addColorStop(1, COLORS.obstacle);
+        } else if (isDock) {
+          cellGradient.addColorStop(0, "#6f96d6");
+          cellGradient.addColorStop(1, COLORS.dock);
+        } else if (dirt === 0) {
+          cellGradient.addColorStop(0, "#ffffff");
+          cellGradient.addColorStop(1, COLORS.clean);
+        } else if (dirt === 1) {
+          cellGradient.addColorStop(0, "#ffe79b");
+          cellGradient.addColorStop(1, COLORS.dirt1);
+        } else if (dirt === 2) {
+          cellGradient.addColorStop(0, "#93ddd7");
+          cellGradient.addColorStop(1, COLORS.dirt2);
+        } else {
+          cellGradient.addColorStop(0, "#f1a09a");
+          cellGradient.addColorStop(1, COLORS.dirt3);
+        }
+
+        context.fillStyle = cellGradient;
         context.beginPath();
         context.roundRect(x, y, size, size, 4);
         context.fill();
         context.strokeStyle = COLORS.gridLine;
         context.lineWidth = 0.5;
         context.stroke();
+
+        if (!isObstacle && !isDock && dirt > 0) {
+          context.save();
+          context.globalAlpha = 0.18;
+          context.fillStyle = "#fff8e8";
+          context.beginPath();
+          context.arc(x + size * 0.68, y + size * 0.3, Math.max(1.8, size * 0.08), 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+        }
       }
     }
 
@@ -74,10 +104,18 @@ export default function MiniGridCanvas({ state }) {
       const x = startX + (robotCol - 1) * cell + cell / 2;
       const y = startY + (robotRow - 1) * cell + cell / 2;
       const radius = Math.max(6, cell * 0.22);
-      context.fillStyle = COLORS.robot;
+      const robotGradient = context.createRadialGradient(x - radius * 0.15, y - radius * 0.2, radius * 0.2, x, y, radius);
+      robotGradient.addColorStop(0, "#454b54");
+      robotGradient.addColorStop(1, COLORS.robot);
+      context.fillStyle = robotGradient;
+      context.save();
+      context.shadowColor = "rgba(0, 0, 0, 0.18)";
+      context.shadowBlur = 6;
+      context.shadowOffsetY = 2;
       context.beginPath();
       context.arc(x, y, radius, 0, Math.PI * 2);
       context.fill();
+      context.restore();
       context.fillStyle = COLORS.robotCore;
       context.beginPath();
       context.arc(x + radius * 0.25, y - radius * 0.2, radius * 0.32, 0, Math.PI * 2);
@@ -95,10 +133,10 @@ export default function MiniGridCanvas({ state }) {
       <div className="grid-legend">
         <span className="legend-item"><span className="swatch swatch-robot" /> Robot</span>
         <span className="legend-item"><span className="swatch swatch-dock" /> Dock</span>
-        <span className="legend-item"><span className="swatch swatch-dirt1" /> D1</span>
-        <span className="legend-item"><span className="swatch swatch-dirt2" /> D2</span>
-        <span className="legend-item"><span className="swatch swatch-dirt3" /> D3</span>
-        <span className="legend-item"><span className="swatch swatch-obstacle" /> Obs</span>
+        <span className="legend-item"><span className="swatch swatch-dirt1" /> Dirt lvl 1</span>
+        <span className="legend-item"><span className="swatch swatch-dirt2" /> Dirt lvl 2</span>
+        <span className="legend-item"><span className="swatch swatch-dirt3" /> Dirt lvl 3</span>
+        <span className="legend-item"><span className="swatch swatch-obstacle" /> Obstacle</span>
       </div>
     </div>
   );

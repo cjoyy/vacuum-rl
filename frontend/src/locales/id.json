@@ -23,6 +23,7 @@
   "demo.kicker": "Simulator langsung",
   "demo.title": "Amati keputusan kebijakan langkah demi langkah",
   "demo.description": "Pilih algoritma, jalankan auto-policy, atau kirim action manual. Grid, battery, reward, dan episode return diperbarui melalui WebSocket.",
+  "demo.limit_note": "Setiap simulasi dibatasi sampai 500 langkah.",
   "about.kicker": "Formulasi MDP",
   "about.title": "Vacuum cleaning sebagai proses keputusan terkendala",
   "about.state.title": "State",
@@ -65,12 +66,13 @@
   "arena.start": "Mulai Arena",
   "arena.stop": "Berhenti",
   "arena.reset_with_same_seed": "Reset dengan seed sama",
-  "arena.max_instances": "Maks 4 algoritma",
+  "arena.max_instances": "Sampai 5 algoritma",
   "arena.battery": "Battery",
   "arena.step": "Langkah",
   "arena.reward": "Reward",
   "arena.status.connecting": "Menghubungkan...",
   "arena.status.running": "Berjalan",
   "arena.status.idle": "Siaga",
-  "arena.no_selection": "Pilih 1 hingga 4 algoritma untuk memulai"
+  "arena.limit_note": "Setiap simulasi dibatasi sampai 500 langkah.",
+  "arena.no_selection": "Pilih 1 hingga 5 algoritma untuk memulai"
 }

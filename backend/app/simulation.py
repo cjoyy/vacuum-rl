@@ -19,6 +19,10 @@ if str(ML_DIR) not in sys.path:
 from env import VacuumCleaningEnv  # noqa: E402
 
 
+def _policy_model_path(algorithm: str) -> Path:
+    return ML_DIR / "models" / algorithm / "seed_12345" / f"{algorithm}_v2_policy.zip"
+
+
 @dataclass(frozen=True)
 class AlgorithmSpec:
     id: str
@@ -33,31 +37,31 @@ ALGORITHMS: dict[str, AlgorithmSpec] = {
         id="dqn",
         name="DQN",
         source="stable_baselines3",
-        model_path=ML_DIR / "models" / "dqn" / "dqn_v2_policy_seed_12345.zip",
+        model_path=_policy_model_path("dqn"),
     ),
     "ppo": AlgorithmSpec(
         id="ppo",
         name="PPO",
         source="stable_baselines3",
-        model_path=ML_DIR / "models" / "ppo" / "ppo_v2_policy_seed_12345.zip",
+        model_path=_policy_model_path("ppo"),
     ),
     "trpo": AlgorithmSpec(
         id="trpo",
         name="TRPO",
         source="sb3_contrib",
-        model_path=ML_DIR / "models" / "trpo" / "trpo_v2_policy_seed_12345.zip",
+        model_path=_policy_model_path("trpo"),
     ),
     "a2c": AlgorithmSpec(
         id="a2c",
         name="A2C",
         source="stable_baselines3",
-        model_path=ML_DIR / "models" / "a2c" / "a2c_v2_policy_seed_12345.zip",
+        model_path=_policy_model_path("a2c"),
     ),
     "sac": AlgorithmSpec(
         id="sac",
         name="SAC",
         source="stable_baselines3",
-        model_path=ML_DIR / "models" / "sac" / "sac_v2_policy_seed_12345.zip",
+        model_path=_policy_model_path("sac"),
         continuous_policy=True,
     ),
 }
@@ -137,7 +141,7 @@ class PolicyCache:
 
 policy_cache = PolicyCache()
 
-ARENA_MAX_INSTANCES = 4
+ARENA_MAX_INSTANCES = 5
 
 
 def make_arena_envs(algorithms: list[str], seed: int = 12345) -> dict[str, VacuumCleaningEnv]:
