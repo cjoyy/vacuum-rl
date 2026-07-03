@@ -95,6 +95,14 @@ export default function GridCanvas({ state }) {
   return (
     <div className="board-shell">
       <canvas ref={canvasRef} className="h-full w-full" aria-label="Vacuum grid simulation" />
+      <div className="grid-legend">
+        <span className="legend-item"><span className="swatch swatch-robot" /> Robot</span>
+        <span className="legend-item"><span className="swatch swatch-dock" /> Dock</span>
+        <span className="legend-item"><span className="swatch swatch-dirt1" /> Dirt 1</span>
+        <span className="legend-item"><span className="swatch swatch-dirt2" /> Dirt 2</span>
+        <span className="legend-item"><span className="swatch swatch-dirt3" /> Dirt 3</span>
+        <span className="legend-item"><span className="swatch swatch-obstacle" /> Obstacle</span>
+      </div>
     </div>
   );
 }
