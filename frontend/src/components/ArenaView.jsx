@@ -126,7 +126,7 @@ export default function ArenaView() {
           <Link to="/">{t("nav.demo")}</Link>
           <a href="#arena-top">{t("nav.arena")}</a>
           <button type="button" className="lang-switcher" onClick={cycleLang}>
-            {i18n.language === "en" ? "ID" : "EN"}
+            {i18n.language === "en" ? "EN" : "ID"}
           </button>
         </nav>
       </header>
@@ -164,13 +164,18 @@ export default function ArenaView() {
 
           <div className="arena-actions">
             <label className="arena-seed-label">
-              Seed
-              <input
-                type="number"
+              Seed (opsional)
+              <select
                 value={seed}
                 onChange={(e) => setSeed(Number(e.target.value))}
                 className="arena-seed-input"
-              />
+              >
+                <option value={12345}>12345</option>
+                <option value={42}>42</option>
+                <option value={1001}>1001</option>
+                <option value={777}>777</option>
+                <option value={2024}>2024</option>
+              </select>
             </label>
 
             {status === "running" ? (
