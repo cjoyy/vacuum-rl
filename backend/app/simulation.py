@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+logger = logging.getLogger("vacuum-rl.simulation")
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 ML_DIR = ROOT_DIR / "ml"
@@ -63,17 +67,41 @@ class PolicyCache:
     def __init__(self) -> None:
         self._models: dict[str, Any] = {}
         self._load_errors: dict[str, str] = {}
+        self._load_times: dict[str, float] = {}
+        self._startup_duration: float = 0.0
 
     @property
     def load_errors(self) -> dict[str, str]:
         return dict(self._load_errors)
 
+    @property
+    def load_times(self) -> dict[str, float]:
+        return dict(self._load_times)
+
+    @property
+    def started(self) -> bool:
+        return bool(self._load_times) or bool(self._load_errors)
+
     def load_all(self) -> None:
+        start = time.perf_counter()
         for algorithm in ALGORITHMS:
+            algo_start = time.perf_counter()
             try:
                 self.get(algorithm)
+                elapsed = time.perf_counter() - algo_start
+                self._load_times[algorithm] = elapsed
+                logger.info("Loaded %s in %.2fs", ALGORITHMS[algorithm].name, elapsed)
             except RuntimeError:
+                elapsed = time.perf_counter() - algo_start
+                self._load_times[algorithm] = elapsed
                 continue
+        self._startup_duration = time.perf_counter() - start
+        loaded = len(self._models)
+        failed = len(self._load_errors)
+        logger.info(
+            "Startup model loading complete: %d loaded, %d failed in %.2fs",
+            loaded, failed, self._startup_duration,
+        )
 
     def get(self, algorithm: str) -> Any:
         algorithm = normalize_algorithm(algorithm)
@@ -108,6 +136,31 @@ class PolicyCache:
 
 
 policy_cache = PolicyCache()
+
+ARENA_MAX_INSTANCES = 4
+
+
+def make_arena_envs(algorithms: list[str], seed: int = 12345) -> dict[str, VacuumCleaningEnv]:
+    envs: dict[str, VacuumCleaningEnv] = {}
+    for algorithm in algorithms[:ARENA_MAX_INSTANCES]:
+        algorithm = normalize_algorithm(algorithm)
+        env = make_env(seed=seed)
+        envs[algorithm] = env
+    return envs
+
+
+def arena_reset(envs: dict[str, VacuumCleaningEnv], seed: int = 12345) -> list[dict[str, Any]]:
+    states: list[dict[str, Any]] = []
+    for algorithm, env in envs.items():
+        states.append(reset_env(env, algorithm=algorithm, seed=seed))
+    return states
+
+
+def arena_step(envs: dict[str, VacuumCleaningEnv], action: int | str | None = None) -> list[dict[str, Any]]:
+    states: list[dict[str, Any]] = []
+    for algorithm, env in envs.items():
+        states.append(step_env(env, algorithm=algorithm, action=action))
+    return states
 
 
 def normalize_algorithm(algorithm: str) -> str:
